@@ -1,0 +1,55 @@
+# This is my attempt to impliment https://pytorch.org/audio/main/tutorials/forced_alignment_for_multilingual_data_tutorial.html
+import torch
+import torchaudio
+from torchaudio.pipelines import MMS_FA as bundle
+from typing import List
+import re
+import sys
+
+device = torch.device("cpu")
+
+model = bundle.get_model()
+model.to(device)
+
+tokenizer = bundle.get_tokenizer()
+aligner = bundle.get_aligner()
+
+def normalize_text(text):
+    text = text.lower()
+    text = text.replace("’", "'")
+    text = re.sub(r"[^a-z\s']", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+def compute_alignments(waveform: torch.Tensor, transcript: str):
+    with torch.inference_mode():
+        emission, _ = model(waveform.to(device))
+        token_spans = aligner(emission[0], tokenizer(transcript))
+    return emission, token_spans
+
+def _score(spans):
+    return sum(s.score * len(s) for s in spans) / sum(len(s) for s in spans)
+
+def force_align(audio_path: str, transcript: str):
+    waveform, sample_rate = torchaudio.load(audio_path)
+    assert sample_rate == bundle.sample_rate
+
+    transcript = transcript.split()
+    tokens = tokenizer(transcript)
+
+    emission, token_spans = compute_alignments(waveform, transcript)
+
+    print(token_spans)
+
+
+def main():
+    text = ""
+    audio_path = sys.argv[1]
+    transcript_path = sys.argv[2]
+    with open(transcript_path) as f:
+        transcript = f.readlines()
+    for line in transcript:
+        text += normalize_text(line) + " "
+    force_align(audio_path, text)
+
+main()

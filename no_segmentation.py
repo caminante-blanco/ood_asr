@@ -79,12 +79,10 @@ def force_align(audio_path: str, transcript: str):
     plot_alignments(waveform, token_spans, emission, transcript)
 
     IPython.display.Audio(waveform, rate=sample_rate)
-
-    preview_word(waveform, token_spans[0], num_frames, transcript[0])
-    preview_word(waveform, token_spans[1], num_frames, transcript[1])
-    preview_word(waveform, token_spans[2], num_frames, transcript[2])
-    preview_word(waveform, token_spans[3], num_frames, transcript[3])
-
+    
+    for i in range(len(token_spans)):
+        preview_word(waveform, token_spans[i], num_frames, transcript[i])
+    
 def main():
     text = ""
     audio_path = sys.argv[1]
